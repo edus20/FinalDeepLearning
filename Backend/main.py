@@ -4,14 +4,13 @@ from fastapi.responses import JSONResponse
 from PIL import Image
 from io import BytesIO
 import torch
-import base64
 from transformers import AutoTokenizer, AutoModel
 import logging
 
 app = FastAPI()
 
 # Configuración de Roboflow (API REST)
-API_URL = "https://detect.roboflow.com/clasificacion-videojuegos-2.0/2"
+API_URL = "https://detect.roboflow.com/clasificacion-videojuegos/1"
 API_KEY = "zuGPdxGRyCVN3EtRgecJ"
 
 # Configuración de OCR
@@ -50,7 +49,7 @@ async def classify_image(file: UploadFile):
             f"{API_URL}?api_key={API_KEY}",
             files={"file": image_bytes},
         )
-        response.raise_for_status()  # Asegurarse de que la respuesta no tenga errores HTTP
+        response.raise_for_status()
         logger.info("Respuesta de Roboflow recibida con éxito.")
         yolo_result = response.json()
 
@@ -61,8 +60,7 @@ async def classify_image(file: UploadFile):
         logger.info(f"Clases detectadas: {clase1}, {clase2}")
 
         # Procesar OCR
-        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-        ocr_result = OCR_MODEL.chat(OCR_TOKENIZER, image, ocr_type="ocr")
+        ocr_result = OCR_MODEL.chat(OCR_TOKENIZER, image_bytes, ocr_type="ocr")
         logger.info("OCR procesado correctamente.")
 
         # Devolver resultados
@@ -80,7 +78,17 @@ async def classify_image(file: UploadFile):
         )
     except Exception as e:
         logger.error(f"Error procesando la imagen: {e}")
+        
+        # Inicializa valores predeterminados para `clase1` y `clase2`
+        clase1 = locals().get("clase1", "No definido")
+        clase2 = locals().get("clase2", "No definido")
+        
         return JSONResponse(
             status_code=500,
-            content={"error": f"Error procesando la imagen: {str(e)}"},
+            content={
+                "error": f"Error procesando la imagen: {str(e)}",
+                "class_1": clase1,
+                "class_2": clase2,
+                "ocr_result": "No disponible",
+            },
         )

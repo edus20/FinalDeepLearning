@@ -13,8 +13,8 @@ def clasificacion(image_path):
 # Configurar la interfaz Gradio
 inputs = gr.Image(type="filepath", label="Sube una imagen JPG")
 outputs = [
-    gr.Textbox(label="Clase 1"),
-    gr.Textbox(label="Clase 2"),
+    gr.Textbox(label="Plataforma"),
+    gr.Textbox(label="Nombre"),
     gr.Textbox(label="Resultado OCR")
 ]
 
