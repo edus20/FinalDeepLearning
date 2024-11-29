@@ -1,0 +1,11 @@
+fastapi
+pillow
+roboflow
+transformers
+torch
+verovio
+torchvision
+uvicorn
+tiktoken
+accelerate
+python-multipart
