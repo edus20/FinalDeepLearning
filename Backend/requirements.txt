@@ -3,8 +3,8 @@ pillow
 roboflow
 transformers
 torch
-verovio
 torchvision
+verovio
 uvicorn
 tiktoken
 accelerate
