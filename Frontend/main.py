@@ -34,7 +34,7 @@ inputs = [
 ]
 outputs = [
     gr.Textbox(label="Plataforma"),
-    gr.Textbox(label="Nombre"),
+    gr.Textbox(label="Clasificación por edades"),
     gr.Textbox(label="Resultado OCR"),
 ]
 

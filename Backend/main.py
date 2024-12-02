@@ -22,7 +22,7 @@ OCR_MODEL = AutoModel.from_pretrained(
     trust_remote_code=True,
     use_safetensors=True,
     pad_token_id=OCR_TOKENIZER.eos_token_id,
-).to(torch.device("cpu")).eval()
+).to(torch.device("cpu")).eval() #Hemos intentado que funcione por CPU, pero el modelo solo funciona con GPU Nvidia (en desarrollo tenemos AMD)
 
 # Configurar logging detallado
 logging.basicConfig(level=logging.DEBUG)
