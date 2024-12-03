@@ -10,7 +10,9 @@ import logging
 app = FastAPI()
 
 # Configuración de Roboflow (API REST)
-API_URL = "https://detect.roboflow.com/clasificacion-videojuegos-2.0/4"
+API_URL_1 = "https://detect.roboflow.com/clasificacion-videojuegos-2.0/4"
+API_URL_2 = "https://detect.roboflow.com/clasificacion-videojuegos-2.0/4"
+
 API_KEY = "zuGPdxGRyCVN3EtRgecJ"
 
 # Configuración de OCR
@@ -52,7 +54,7 @@ async def classify_image(
             # Llamar a la API de Roboflow
             try:
                 response = requests.post(
-                    f"{API_URL}?api_key={API_KEY}",
+                    f"{API_URL_1}?api_key={API_KEY}",
                     files={"file": image_bytes},
                 )
                 response.raise_for_status()
@@ -62,12 +64,28 @@ async def classify_image(
                 # Procesar resultados de YOLO
                 predictions = yolo_result.get("predictions", [])
                 clase1 = predictions[0]["class"] if len(predictions) > 0 else "Sin detección"
-                clase2 = predictions[1]["class"] if len(predictions) > 1 else "Sin detección"
                 logger.info(f"Clase 1 detectada: {clase1}")
-                logger.info(f"Clase 2 detectada: {clase2}")
             except Exception as e:
                 logger.error(f"Error procesando la imagen con Roboflow: {e}")
                 clase1 = "Error procesando la imagen"
+
+            
+            # Llamar a la API de Roboflow
+            try:
+                response = requests.post(
+                    f"{API_URL_2}?api_key={API_KEY}",
+                    files={"file": image_bytes},
+                )
+                response.raise_for_status()
+                logger.info("Respuesta de Roboflow recibida con éxito.")
+                yolo_result = response.json()
+
+                # Procesar resultados de YOLO
+                predictions = yolo_result.get("predictions", [])
+                clase2 = predictions[0]["class"] if len(predictions) > 0 else "Sin detección"
+                logger.info(f"Clase 2 detectada: {clase1}")
+            except Exception as e:
+                logger.error(f"Error procesando la imagen con Roboflow: {e}")
                 clase2 = "Error procesando la imagen"
 
         # Procesar OCR con la URL
