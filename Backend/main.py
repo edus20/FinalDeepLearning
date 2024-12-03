@@ -10,7 +10,7 @@ import logging
 app = FastAPI()
 
 # Configuración de Roboflow (API REST)
-API_URL = "https://detect.roboflow.com/clasificacion-videojuegos-2.0/2"
+API_URL = "https://detect.roboflow.com/clasificacion-videojuegos-2.0/4"
 API_KEY = "zuGPdxGRyCVN3EtRgecJ"
 
 # Configuración de OCR
