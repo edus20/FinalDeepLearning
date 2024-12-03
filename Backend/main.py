@@ -1,5 +1,5 @@
 import requests
-from fastapi import FastAPI, UploadFile, Form
+from fastapi import FastAPI, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
 from io import BytesIO
@@ -22,64 +22,63 @@ OCR_MODEL = AutoModel.from_pretrained(
     trust_remote_code=True,
     use_safetensors=True,
     pad_token_id=OCR_TOKENIZER.eos_token_id,
-).to(torch.device("cpu")).eval() #Hemos intentado que funcione por CPU, pero el modelo solo funciona con GPU Nvidia (en desarrollo tenemos AMD)
+).to(torch.device("cpu")).eval()
 
 # Configurar logging detallado
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+
 @app.post("/classify")
-async def classify_image(
-    file: UploadFile = None,
-    url: str = Form(default="")
-):
+async def classify_image(file: UploadFile = None):
+    if not file:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "No se proporcionó ninguna imagen."}
+        )
+
     try:
+        # Procesar la imagen recibida
+        logger.info("Procesando imagen proporcionada...")
+        image = Image.open(file.file)
+
+        # **OCR**: Procesar texto desde la imagen
+        ocr_result = "No disponible"
+        try:
+            logger.info("Procesando OCR...")
+            ocr_result = OCR_MODEL.chat(OCR_TOKENIZER, image, ocr_type="ocr")
+            logger.info("OCR procesado correctamente.")
+        except Exception as e:
+            logger.error(f"Error procesando la imagen con OCR: {e}")
+            ocr_result = f"Error de OCR: {str(e)}"
+
+        # **Roboflow**: Enviar imagen a la API
         clase1 = "No proporcionada"
         clase2 = "No proporcionada"
-        ocr_result = "No disponible"
-
-        # Procesar la imagen si se proporciona
-        if file:
-            logger.info("Procesando imagen proporcionada...")
-            image = Image.open(file.file)
-
-            # Convertir la imagen a bytes para enviarla a la API de Roboflow
+        try:
+            logger.info("Enviando imagen a Roboflow...")
             buffered = BytesIO()
             image.save(buffered, format="JPEG")
             image_bytes = buffered.getvalue()
-            logger.info("Imagen convertida a bytes con éxito.")
 
-            # Llamar a la API de Roboflow
-            try:
-                response = requests.post(
-                    f"{API_URL}?api_key={API_KEY}",
-                    files={"file": image_bytes},
-                )
-                response.raise_for_status()
-                logger.info("Respuesta de Roboflow recibida con éxito.")
-                yolo_result = response.json()
+            response = requests.post(
+                f"{API_URL}?api_key={API_KEY}",
+                files={"file": ("image.jpg", image_bytes, "image/jpeg")}
+            )
+            response.raise_for_status()
+            yolo_result = response.json()
 
-                # Procesar resultados de YOLO
-                predictions = yolo_result.get("predictions", [])
-                clase1 = predictions[0]["class"] if len(predictions) > 0 else "Sin detección"
-                clase2 = predictions[1]["class"] if len(predictions) > 1 else "Sin detección"
-                logger.info(f"Clase 1 detectada: {clase1}")
-                logger.info(f"Clase 2 detectada: {clase2}")
-            except Exception as e:
-                logger.error(f"Error procesando la imagen con Roboflow: {e}")
-                clase1 = "Error procesando la imagen"
-                clase2 = "Error procesando la imagen"
+            # Procesar resultados de YOLO
+            predictions = yolo_result.get("predictions", [])
+            clase1 = predictions[0]["class"] if len(predictions) > 0 else "Sin detección"
+            clase2 = predictions[1]["class"] if len(predictions) > 1 else "Sin detección"
+            logger.info(f"Clases detectadas: {clase1}, {clase2}")
+        except Exception as e:
+            logger.error(f"Error procesando la imagen con Roboflow: {e}")
+            clase1 = "Error procesando la imagen"
+            clase2 = "Error procesando la imagen"
 
-        # Procesar OCR con la URL
-        if url.strip():
-            try:
-                logger.info(f"Procesando OCR con la URL proporcionada: {url}")
-                ocr_result = OCR_MODEL.chat(OCR_TOKENIZER, url, ocr_type="ocr")
-                logger.info("OCR procesado correctamente con URL.")
-            except Exception as e:
-                logger.error(f"Error procesando la URL con OCR: {e}")
-                ocr_result = f"Error de OCR: {str(e)}"
-
+        # Responder con los resultados
         return {
             "class_1": clase1,
             "class_2": clase2,
